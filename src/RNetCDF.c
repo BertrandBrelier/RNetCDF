@@ -4,7 +4,7 @@
  *									       *
  *  Version:    							       *
  *									       *
- *  Purpose:    NetCDF interface for R.					       *
+ *  Purpose:    NetCDF4 interface for R.					       *
  *									       *
  *  Author:     Bertrand Brelier (bertrand.brelier@gmail.com)
                 Pavel Michna (michna@giub.unibe.ch)			       *
