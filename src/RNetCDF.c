@@ -112,6 +112,37 @@ SEXP R_nc_create (SEXP filename, SEXP type)
   return(retlist);
 }
 
+SEXP R_nc_close (SEXP ncid)
+{
+  int  status;
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 2));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  status = -1;
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  SET_VECTOR_ELT (retlist, 1, mkString(""));
+
+  /*-- Close the file -------------------------------------------------------*/
+  status = nc_close(INTEGER(ncid)[0]);
+  if(status != NC_NOERR)
+    SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+
+  /*-- Returning the list ---------------------------------------------------*/
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  UNPROTECT(2);
+  return(retlist);
+}
+
+
 
 /*=============================================================================*\                                                                                                      
  *  Udunits library functions                                                  *                                                                                                       
