@@ -112,55 +112,6 @@ SEXP R_nc_create (SEXP filename, SEXP type)
   return(retlist);
 }
 
-/*-----------------------------------------------------------------------------*\                                                                                                     
-*  R_ut_init()                                                                *                                                                                                       
-\*-----------------------------------------------------------------------------*/
-
-SEXP R_ut_init (SEXP path)
-{
-  int   status;
-  char  strerror[64];
-  SEXP  retlist, retlistnames;
-
-  /*-- Avoid "overriding default" messages from UDUNITS-2 (1/2) -------------*/
-    #ifdef UT_UNITS2_H_INCLUDED
-  ut_system* unitSystem;
-
-  ut_set_error_message_handler(ut_ignore);
-  unitSystem = ut_read_xml(NULL);
-    #endif
-
-  /*-- Create output object and initialize return values --------------------*/
-  PROTECT(retlist = allocVector(VECSXP, 2));
-  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-
-  PROTECT(retlistnames = allocVector(STRSXP, 2));
-  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
-  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
-  setAttrib(retlist, R_NamesSymbol, retlistnames);
-
-  status = -1;
-  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-  SET_VECTOR_ELT (retlist, 1, mkString(""));
-
-  /*-- Initialize udunits library -------------------------------------------*/
-  status = utInit(R_ExpandFileName(CHAR(STRING_ELT(path, 0))));
-  if(status != 0) {
-    R_ut_strerror(status, strerror);
-    SET_VECTOR_ELT(retlist, 1, mkString(strerror));
-  }
-
-  /*-- Avoid "overriding default" messages from UDUNITS-2 (2/2) -------------*/
-    #ifdef UT_UNITS2_H_INCLUDED
-  ut_set_error_message_handler(ut_write_to_stderr);
-    #endif
-
-  /*-- Returning the list ---------------------------------------------------*/
-  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-  UNPROTECT(2);
-  return(retlist);
-}
 
 /*=============================================================================*\                                                                                                      
  *  Udunits library functions                                                  *                                                                                                       
