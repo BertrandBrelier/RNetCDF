@@ -53,4 +53,18 @@ create.nc <- function(filename,type)
         stop(nc$errmsg, call.=FALSE)
 }
 
+#-------------------------------------------------------------------------------#
+#  utinit.nc()                                                                  #
+#-------------------------------------------------------------------------------#
+
+utinit.nc <- function(path="")
+{
+    ut <- .Call("R_ut_init",
+                as.character(path),
+                PACKAGE="RNetCDF")
+
+    if(ut$status != 0)
+        stop(ut$errmsg, call.=FALSE)
+}
+
 
