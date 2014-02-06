@@ -96,14 +96,29 @@ compound.inq.nc <- function(ncfile, typeid)
           as.integer(typeid),
           PACKAGE="RNetCDF")
 
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        nctypeid <- nc$mtypeid
-        attr(nctypeid, "class") <- "NC_COMPOUND"
-        return(nctypeid)
-    } else
-        stop(nc$errmsg, call.=FALSE)
+    # #-- Return object if no error ----------------------------------------------#
+    # if(nc$status == 0) {
+    #     nctypeid <- nc$mtypeid
+    #     attr(nctypeid, "class") <- "NC_COMPOUND"
+    #     return(nctypeid)
+    # } else
+    #     stop(nc$errmsg, call.=FALSE)
 }   
+
+compound.insert.nc <- function(ncfile, typeid, name, offset, field_typeid)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(class(typeid) == "NC_COMPOUND")
+
+    nc <- .Call("R_nc_insert_compound",
+          as.integer(ncfile),
+          as.integer(typeid),
+          as.character(name),
+          as.integer(offset),
+          as.character(field_typeid),
+          PACKAGE="RNetCDF")
+}
 
 compound.make.nc <- function(ncfile , nctypeid)
 {

@@ -223,22 +223,47 @@ SEXP R_nc_inq_compound(SEXP ncid, SEXP typeid){
   SEXP retlist, retlistnames;
 
   /*-- Create output object and initialize return values --------------------*/
-  PROTECT(retlist = allocVector(VECSXP, 3));
+  PROTECT(retlist = allocVector(VECSXP, 2));
   SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
   SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
 
-  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  PROTECT(retlistnames = allocVector(STRSXP, 2));
   SET_STRING_ELT(retlistnames, 0, mkChar("status"));
   SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
-  SET_STRING_ELT(retlistnames, 2, mkChar("mtypeid"));
   setAttrib(retlist, R_NamesSymbol, retlistnames);
 
   status = -1;
   status = nc_inq_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], name, &size, &nfields);
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-  REAL(VECTOR_ELT(retlist, 2))[0] = (double)(INTEGER(typeid)[0]);
+
+  UNPROTECT(2);
+  return(retlist);
+}
+
+SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP field_typeid){
+  int status;
+
+  size_t myoffset;
+  nc_type mytype;
+
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 2));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  myoffset = INTEGER(offset)[0];
+  mytype=NC_INT;
+  status = nc_insert_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
 
   UNPROTECT(2);
   return(retlist);
@@ -299,10 +324,10 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
   //nc_inq_compound(mycid, mtypeid, name, &size, &nfields);
   //size != mysize || strcmp(name, SVC_REC) || nfields;
 
-  nc_insert_compound(mycid, mtypeid, "Var1",
-		     NC_COMPOUND_OFFSET(struct s1, i1), NC_INT);
-  nc_insert_compound(mycid, mtypeid, "Var2",
-		     NC_COMPOUND_OFFSET(struct s1, i2), NC_INT);
+  /* nc_insert_compound(mycid, mtypeid, "Var1", */
+  /* 		     NC_COMPOUND_OFFSET(struct s1, i1), NC_INT); */
+  /* nc_insert_compound(mycid, mtypeid, "Var2", */
+  /* 		     NC_COMPOUND_OFFSET(struct s1, i2), NC_INT); */
   nc_def_dim(mycid, STARDATE, DIM_LEN, &dimid);
   nc_def_var(mycid, SERVICE_RECORD, mtypeid, 1, dimids, &varid);
   nc_put_var(mycid, varid, data);
