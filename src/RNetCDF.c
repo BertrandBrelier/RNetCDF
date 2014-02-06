@@ -260,7 +260,39 @@ SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP f
   setAttrib(retlist, R_NamesSymbol, retlistnames);
 
   myoffset = INTEGER(offset)[0];
-  mytype=NC_INT;
+  if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_INT"  ) == 0)
+    mytype=NC_INT;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_BYTE"  ) == 0)
+    mytype= NC_BYTE ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_CHAR"  ) == 0)
+    mytype= NC_CHAR ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_SHORT"  ) == 0)
+    mytype= NC_SHORT ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_FLOAT"  ) == 0)
+    mytype= NC_FLOAT ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_DOUBLE"  ) == 0)
+    mytype= NC_DOUBLE ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_UBYTE"  ) == 0)
+    mytype= NC_UBYTE ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_USHORT"  ) == 0)
+    mytype= NC_USHORT ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_UINT"  ) == 0)
+    mytype= NC_UINT ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_INT64"  ) == 0)
+    mytype= NC_INT64 ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_UINT64"  ) == 0)
+    mytype= NC_UINT64 ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_STRING"  ) == 0)
+    mytype= NC_STRING ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_VLEN"  ) == 0)
+    mytype= NC_VLEN ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_OPAQUE"  ) == 0)
+    mytype= NC_OPAQUE ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_ENUM"  ) == 0)
+    mytype= NC_ENUM ;
+  else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_COMPOUND"  ) == 0)
+    mytype= NC_COMPOUND ;
+  
   status = nc_insert_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype);
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
