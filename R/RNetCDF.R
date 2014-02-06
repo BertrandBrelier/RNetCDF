@@ -66,13 +66,14 @@ dim.def.nc <- function(ncfile, dimname, dimension)
 		PACKAGE="RNetCDF")
 }
 
-compound.def.nc <- function(ncfile)
+compound.def.nc <- function(ncfile, size)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
 
     nc <- .Call("R_nc_def_compound",
                 as.integer(ncfile),
+                as.integer(size),
                 PACKAGE="RNetCDF")
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {

@@ -180,7 +180,7 @@ SEXP R_nc_def_dim(SEXP ncid, SEXP dimname, SEXP dimension){
   UNPROTECT(2);
   return(retlist);
 }
-SEXP R_nc_def_compound(SEXP ncid){
+SEXP R_nc_def_compound(SEXP ncid, SEXP size){
   int status;
   int mycid;
   int mtypeid;
@@ -205,7 +205,7 @@ SEXP R_nc_def_compound(SEXP ncid){
   REAL(VECTOR_ELT(retlist, 2))[0] = (double)mtypeid;
 
 
-  size_t mysize = 8;
+  size_t mysize = INTEGER(size)[0];
   mycid=INTEGER(ncid)[0];
   status = nc_def_compound(mycid, mysize, SVC_REC, &mtypeid);
 
