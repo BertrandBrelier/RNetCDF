@@ -44,8 +44,6 @@
 #include <Rinternals.h>
 
 #define DIM_LEN 10 //number of records in file                                                                                                                                         
-#define SVC_REC "Particle"
-#define STARDATE "NRecords"
 #define SERVICE_RECORD "Data"
 
 
@@ -301,7 +299,36 @@ SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP f
   return(retlist);
 }
 
-SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
+SEXP R_nc_def_var(SEXP ncid, SEXP typeid, SEXP name, SEXP spin){
+  int status;
+  int dimids[] = {0}, fieldid;
+  int varid;
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  SET_STRING_ELT(retlistnames, 2, mkChar("varid"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  //spin : 2 specifies a matrix, 1 specifies a vector, and 0 means the variable is a scalar
+  status = nc_def_var(INTEGER(ncid)[0], CHAR(STRING_ELT(name, 0)), INTEGER(typeid)[0], INTEGER(spin)[0], dimids, &varid);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)varid;
+  UNPROTECT(2);
+  return(retlist);
+
+}
+
+
+SEXP R_nc_make_compound(SEXP ncid, SEXP typeid, SEXP varid){
 
   int status;
   SEXP retlist, retlistnames;
@@ -320,7 +347,7 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
 
 
 
-  int mycid, mtypeid, varid;
+  int mycid, mtypeid, myvarid;
   //size_t nfields;
   int dimid;
   int ndims, nvars, natts, unlimdimid;
@@ -346,6 +373,7 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
 
   mycid=INTEGER(ncid)[0];
   mtypeid = INTEGER(typeid)[0];
+  myvarid = INTEGER(varid)[0];
 
   //size_t mysize = sizeof(struct s1);
   //size_t mysize = 8;
@@ -360,9 +388,9 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
   /* 		     NC_COMPOUND_OFFSET(struct s1, i1), NC_INT); */
   /* nc_insert_compound(mycid, mtypeid, "Var2", */
   /* 		     NC_COMPOUND_OFFSET(struct s1, i2), NC_INT); */
-  nc_def_dim(mycid, STARDATE, DIM_LEN, &dimid);
-  nc_def_var(mycid, SERVICE_RECORD, mtypeid, 1, dimids, &varid);
-  nc_put_var(mycid, varid, data);
+  //nc_def_dim(mycid, STARDATE, DIM_LEN, &dimid);
+  //nc_def_var(mycid, SERVICE_RECORD, mtypeid, 1, dimids, &varid);
+  nc_put_var(mycid, myvarid, data);
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
   UNPROTECT(2);
