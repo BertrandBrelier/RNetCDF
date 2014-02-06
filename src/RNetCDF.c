@@ -180,7 +180,7 @@ SEXP R_nc_def_dim(SEXP ncid, SEXP dimname, SEXP dimension){
   UNPROTECT(2);
   return(retlist);
 }
-SEXP R_nc_def_compound(SEXP ncid, SEXP size){
+SEXP R_nc_def_compound(SEXP ncid, SEXP size, SEXP name){
   int status;
   int mycid;
   int mtypeid;
@@ -207,7 +207,7 @@ SEXP R_nc_def_compound(SEXP ncid, SEXP size){
 
   size_t mysize = INTEGER(size)[0];
   mycid=INTEGER(ncid)[0];
-  status = nc_def_compound(mycid, mysize, SVC_REC, &mtypeid);
+  status = nc_def_compound(mycid, mysize, CHAR(STRING_ELT(name, 0)), &mtypeid);
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
   REAL(VECTOR_ELT(retlist, 2))[0] = (double)mtypeid;
@@ -215,7 +215,34 @@ SEXP R_nc_def_compound(SEXP ncid, SEXP size){
   return(retlist);
 
 }
+SEXP R_nc_inq_compound(SEXP ncid, SEXP typeid){
+  int status;
+  char name[NC_MAX_NAME + 1];
+  size_t size;
+  size_t nfields;
+  SEXP retlist, retlistnames;
 
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  SET_STRING_ELT(retlistnames, 2, mkChar("mtypeid"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  status = -1;
+  status = nc_inq_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], name, &size, &nfields);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)(INTEGER(typeid)[0]);
+
+  UNPROTECT(2);
+  return(retlist);
+}
 
 SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
 
@@ -237,11 +264,11 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
 
 
   int mycid, mtypeid, varid;
-  size_t nfields;
+  //size_t nfields;
   int dimid;
   int ndims, nvars, natts, unlimdimid;
   char name[NC_MAX_NAME + 1];
-  size_t size;
+  //size_t size;
   nc_type xtype, field_xtype;
   int dimids[] = {0}, fieldid;
   int field_ndims, field_sizes[NC_MAX_DIMS];
@@ -264,13 +291,14 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
   mtypeid = INTEGER(typeid)[0];
 
   //size_t mysize = sizeof(struct s1);
-  size_t mysize = 8;
+  //size_t mysize = 8;
 
 
   //nc_def_compound(mycid, mysize, SVC_REC, &mtypeid);
   
-  nc_inq_compound(mycid, mtypeid, name, &size, &nfields);
-  size != mysize || strcmp(name, SVC_REC) || nfields;
+  //nc_inq_compound(mycid, mtypeid, name, &size, &nfields);
+  //size != mysize || strcmp(name, SVC_REC) || nfields;
+
   nc_insert_compound(mycid, mtypeid, "Var1",
 		     NC_COMPOUND_OFFSET(struct s1, i1), NC_INT);
   nc_insert_compound(mycid, mtypeid, "Var2",

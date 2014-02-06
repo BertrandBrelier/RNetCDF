@@ -66,7 +66,7 @@ dim.def.nc <- function(ncfile, dimname, dimension)
 		PACKAGE="RNetCDF")
 }
 
-compound.def.nc <- function(ncfile, size)
+compound.def.nc <- function(ncfile, size, name)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -74,6 +74,7 @@ compound.def.nc <- function(ncfile, size)
     nc <- .Call("R_nc_def_compound",
                 as.integer(ncfile),
                 as.integer(size),
+		as.character(name),
                 PACKAGE="RNetCDF")
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -84,10 +85,32 @@ compound.def.nc <- function(ncfile, size)
         stop(nc$errmsg, call.=FALSE)
 }
 
+compound.inq.nc <- function(ncfile, typeid)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(class(typeid) == "NC_COMPOUND")
+
+    nc <- .Call("R_nc_inq_compound",
+          as.integer(ncfile),
+          as.integer(typeid),
+          PACKAGE="RNetCDF")
+
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nctypeid <- nc$mtypeid
+        attr(nctypeid, "class") <- "NC_COMPOUND"
+        return(nctypeid)
+    } else
+        stop(nc$errmsg, call.=FALSE)
+}   
+
 compound.make.nc <- function(ncfile , nctypeid)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(class(nctypeid) == "NC_COMPOUND")
+
 
     nc <- .Call("R_nc_make_compound",
                 as.integer(ncfile),
