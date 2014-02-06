@@ -53,6 +53,47 @@ create.nc <- function(filename,type)
         stop(nc$errmsg, call.=FALSE)
 }
 
+
+dim.def.nc <- function(ncfile, dimname, dimension)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+
+    nc <- .Call("R_nc_def_dim",
+		as.integer(ncfile),
+		as.character(dimname),
+		as.integer(dimension),
+		PACKAGE="RNetCDF")
+}
+
+compound.def.nc <- function(ncfile)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+
+    nc <- .Call("R_nc_def_compound",
+                as.integer(ncfile),
+                PACKAGE="RNetCDF")
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nctypeid <- nc$mtypeid
+        attr(nctypeid, "class") <- "NC_COMPOUND"
+        return(nctypeid)
+    } else
+        stop(nc$errmsg, call.=FALSE)
+}
+
+compound.make.nc <- function(ncfile , nctypeid)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+
+    nc <- .Call("R_nc_make_compound",
+                as.integer(ncfile),
+                as.integer(nctypeid),
+                PACKAGE="RNetCDF")
+}
+
 #-------------------------------------------------------------------------------#
 #  close.nc()                                                                   #
 #-------------------------------------------------------------------------------#

@@ -43,6 +43,10 @@
 #include <R.h>
 #include <Rinternals.h>
 
+#define DIM_LEN 10 //number of records in file                                                                                                                                         
+#define SVC_REC "Particle"
+#define STARDATE "NRecords"
+#define SERVICE_RECORD "Data"
 
 
 /*=============================================================================*\
@@ -142,6 +146,145 @@ SEXP R_nc_close (SEXP ncid)
   return(retlist);
 }
 
+SEXP R_nc_def_dim(SEXP ncid, SEXP dimname, SEXP dimension){
+  int status;
+  int latid;
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  SET_STRING_ELT(retlistnames, 2, mkChar("latid"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  latid   = -1;
+  status = -1;
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  SET_VECTOR_ELT (retlist, 1, mkString(""));
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)latid;
+
+  size_t len;
+  //len=0 means NC_UNLIMITED
+  len = INTEGER(dimension)[0];
+
+  status = nc_def_dim(INTEGER(ncid)[0], CHAR(STRING_ELT(dimname, 0)), len, &latid);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)latid;
+  UNPROTECT(2);
+  return(retlist);
+}
+SEXP R_nc_def_compound(SEXP ncid){
+  int status;
+  int mycid;
+  int mtypeid;
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  SET_STRING_ELT(retlistnames, 2, mkChar("mtypeid"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  mtypeid   = -1;
+  status = -1;
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  SET_VECTOR_ELT (retlist, 1, mkString(""));
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)mtypeid;
+
+
+  size_t mysize = 8;
+  mycid=INTEGER(ncid)[0];
+  status = nc_def_compound(mycid, mysize, SVC_REC, &mtypeid);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)mtypeid;
+  UNPROTECT(2);
+  return(retlist);
+
+}
+
+
+SEXP R_nc_make_compound(SEXP ncid, SEXP typeid){
+
+  int status;
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  SET_STRING_ELT(retlistnames, 2, mkChar("latid"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+
+
+  int mycid, mtypeid, varid;
+  size_t nfields;
+  int dimid;
+  int ndims, nvars, natts, unlimdimid;
+  char name[NC_MAX_NAME + 1];
+  size_t size;
+  nc_type xtype, field_xtype;
+  int dimids[] = {0}, fieldid;
+  int field_ndims, field_sizes[NC_MAX_DIMS];
+  size_t offset;
+  int i;
+  struct s1
+  {
+    int i1;
+    int i2;
+  };
+  struct s1 data[DIM_LEN];
+  /* Create some phony data. */
+  for (i=0; i<DIM_LEN; i++)
+    {
+      data[i].i1 = 5;
+      data[i].i2 = 10;
+    }
+
+  mycid=INTEGER(ncid)[0];
+  mtypeid = INTEGER(typeid)[0];
+
+  //size_t mysize = sizeof(struct s1);
+  size_t mysize = 8;
+
+
+  //nc_def_compound(mycid, mysize, SVC_REC, &mtypeid);
+  
+  nc_inq_compound(mycid, mtypeid, name, &size, &nfields);
+  size != mysize || strcmp(name, SVC_REC) || nfields;
+  nc_insert_compound(mycid, mtypeid, "Var1",
+		     NC_COMPOUND_OFFSET(struct s1, i1), NC_INT);
+  nc_insert_compound(mycid, mtypeid, "Var2",
+		     NC_COMPOUND_OFFSET(struct s1, i2), NC_INT);
+  nc_def_dim(mycid, STARDATE, DIM_LEN, &dimid);
+  nc_def_var(mycid, SERVICE_RECORD, mtypeid, 1, dimids, &varid);
+  nc_put_var(mycid, varid, data);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  UNPROTECT(2);
+  return(retlist);
+
+  
+}
 
 
 /*=============================================================================*\                                                                                                      
