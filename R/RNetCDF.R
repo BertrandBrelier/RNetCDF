@@ -53,6 +53,22 @@ create.nc <- function(filename,type)
         stop(nc$errmsg, call.=FALSE)
 }
 
+DataFrame.read <- function(dataframe)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(dataframe) == "data.frame")
+
+    Nrow <- nrow(dataframe)
+    Column <- dataframe[[2]]
+    nc <- .Call("R_nc_read_DataFrame",
+                as.integer(Nrow),
+		as.integer(Data[[2]]),
+                PACKAGE="RNetCDF")	
+
+    #ncfile <- nc$Nrow
+    #ncfile <- nc$Col1
+    return(nc)
+}
 
 dim.def.nc <- function(ncfile, dimname, dimension)
 {
@@ -80,6 +96,9 @@ compound.def.nc <- function(ncfile, size, name)
     if(nc$status == 0) {
         nctypeid <- nc$mtypeid
         attr(nctypeid, "class") <- "NC_COMPOUND"
+        attr(nctypeid, "size") <- as.integer(size)
+        attr(nctypeid, "NVar") <- as.integer(0)
+        attr(nctypeid, "OffSet") <- as.integer(0)
         return(nctypeid)
     } else
         stop(nc$errmsg, call.=FALSE)
@@ -118,7 +137,7 @@ var.def.nc <- function(ncfile,typeid,name,spin)
         stop(nc$errmsg, call.=FALSE)			
 }
 
-compound.insert.nc <- function(ncfile, typeid, name, offset, field_typeid)
+compound.insert.nc <- function(ncfile, typeid, name, field_typeid)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -128,12 +147,61 @@ compound.insert.nc <- function(ncfile, typeid, name, offset, field_typeid)
           as.integer(ncfile),
           as.integer(typeid),
           as.character(name),
-          as.integer(offset),
+          as.integer(attr(typeid, "OffSet")),
           as.character(field_typeid),
           PACKAGE="RNetCDF")
+
+    attr(typeid, "NVar") <- as.integer(attr(typeid,'NVar')+1)
+    attr(typeid, "VarName") <- append(attr(typeid, "VarName"),as.character(field_typeid))
+  if(as.character(field_typeid)=="NC_INT"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4)
+    }
+
+  if(as.character(field_typeid)=="NC_BYTE"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1)
+    }
+
+  if(as.character(field_typeid)=="NC_CHAR"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1)
+    }
+
+  if(as.character(field_typeid)=="NC_SHORT"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2)
+    }
+
+  if(as.character(field_typeid)=="NC_FLOAT"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4)
+    }
+
+  if(as.character(field_typeid)=="NC_DOUBLE"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8)
+    }
+
+  if(as.character(field_typeid)=="NC_UBYTE"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1)
+    }
+
+  if(as.character(field_typeid)=="NC_USHORT"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2)
+    }
+
+  if(as.character(field_typeid)=="NC_UINT"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4)
+    }
+
+  if(as.character(field_typeid)=="NC_INT64"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8)
+    }
+
+  if(as.character(field_typeid)=="NC_UINT64"){
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8)
+    }
+
+
+    return(typeid)
 }
 
-compound.make.nc <- function(ncfile , nctypeid, varid)
+compound.make.nc <- function(ncfile , nctypeid, varid, TheData)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -144,6 +212,9 @@ compound.make.nc <- function(ncfile , nctypeid, varid)
                 as.integer(ncfile),
                 as.integer(nctypeid),
                 as.integer(varid),
+                as.integer(attr(nctypeid,'NVar')),
+		as.character(attr(nctypeid,'VarName')),
+		as.data.frame(TheData),	
                 PACKAGE="RNetCDF")
 }
 

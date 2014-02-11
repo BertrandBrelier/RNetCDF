@@ -327,8 +327,33 @@ SEXP R_nc_def_var(SEXP ncid, SEXP typeid, SEXP name, SEXP spin){
 
 }
 
+SEXP R_nc_read_DataFrame(SEXP nrow, SEXP col){
+  SEXP retlist, retlistnames;
+  PROTECT(retlist = allocVector(VECSXP, 2));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(REALSXP, 1));
 
-SEXP R_nc_make_compound(SEXP ncid, SEXP typeid, SEXP varid){
+
+  PROTECT(retlistnames = allocVector(STRSXP, 2));
+  SET_STRING_ELT(retlistnames, 0, mkChar("Nrow"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("Col1"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  int myrow = INTEGER(nrow)[0];
+  int sum = 0;
+  for (int i=0;i<myrow;i++){
+    sum+=INTEGER(col)[i];
+  }
+
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = INTEGER(nrow)[0];
+  REAL(VECTOR_ELT(retlist, 1))[0] = sum;
+
+  UNPROTECT(2);
+  return(retlist);
+}
+
+SEXP R_nc_make_compound(SEXP ncid, SEXP typeid, SEXP varid, SEXP Ndim, SEXP VarName, SEXP TheData){
 
   int status;
   SEXP retlist, retlistnames;
@@ -347,50 +372,39 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid, SEXP varid){
 
 
 
-  int mycid, mtypeid, myvarid;
-  //size_t nfields;
-  int dimid;
-  int ndims, nvars, natts, unlimdimid;
-  char name[NC_MAX_NAME + 1];
-  //size_t size;
-  nc_type xtype, field_xtype;
-  int dimids[] = {0}, fieldid;
-  int field_ndims, field_sizes[NC_MAX_DIMS];
-  size_t offset;
-  int i;
-  struct s1
-  {
-    int i1;
-    int i2;
-  };
-  struct s1 data[DIM_LEN];
-  /* Create some phony data. */
-  for (i=0; i<DIM_LEN; i++)
-    {
-      data[i].i1 = 5;
-      data[i].i2 = 10;
-    }
-
+  int mycid, mtypeid, myvarid, myNdim;
   mycid=INTEGER(ncid)[0];
   mtypeid = INTEGER(typeid)[0];
   myvarid = INTEGER(varid)[0];
+  myNdim = INTEGER(Ndim)[0];
 
-  //size_t mysize = sizeof(struct s1);
-  //size_t mysize = 8;
+  struct s1
+  {
+    union{
+      int i[2];
+      float f[2];
+      double d[1];
+    }u;
+  };
 
-
-  //nc_def_compound(mycid, mysize, SVC_REC, &mtypeid);
-  
-  //nc_inq_compound(mycid, mtypeid, name, &size, &nfields);
-  //size != mysize || strcmp(name, SVC_REC) || nfields;
-
-  /* nc_insert_compound(mycid, mtypeid, "Var1", */
-  /* 		     NC_COMPOUND_OFFSET(struct s1, i1), NC_INT); */
-  /* nc_insert_compound(mycid, mtypeid, "Var2", */
-  /* 		     NC_COMPOUND_OFFSET(struct s1, i2), NC_INT); */
-  //nc_def_dim(mycid, STARDATE, DIM_LEN, &dimid);
-  //nc_def_var(mycid, SERVICE_RECORD, mtypeid, 1, dimids, &varid);
+  struct s1 data[DIM_LEN];//DIM_LEN = number of records
+  for (int i=0; i<DIM_LEN; i++)
+    {
+      for(int dim=0; dim<myNdim ; dim++){
+	SEXP coldata = VECTOR_ELT(TheData,dim);// (data for dim-th column) 
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_DOUBLE"  ) == 0){
+	  data[i].u.d[dim]=REAL(VECTOR_ELT(coldata,i))[0];
+	}
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_INT"  ) == 0){
+	  data[i].u.i[dim] = INTEGER(VECTOR_ELT(coldata,i))[0];
+	}
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_FLOAT"  ) == 0){
+	  data[i].u.f[dim] = REAL(VECTOR_ELT(coldata,i))[0];
+	}
+      }
+    }
   nc_put_var(mycid, myvarid, data);
+
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
   UNPROTECT(2);
