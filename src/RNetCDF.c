@@ -353,7 +353,7 @@ SEXP R_nc_read_DataFrame(SEXP nrow, SEXP col){
   return(retlist);
 }
 
-SEXP R_nc_make_compound(SEXP ncid, SEXP typeid, SEXP varid, SEXP Ndim, SEXP VarName, SEXP TheData){
+SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim, SEXP VarName, SEXP TheData){
 
   int status;
   SEXP retlist, retlistnames;
@@ -378,29 +378,84 @@ SEXP R_nc_make_compound(SEXP ncid, SEXP typeid, SEXP varid, SEXP Ndim, SEXP VarN
   myvarid = INTEGER(varid)[0];
   myNdim = INTEGER(Ndim)[0];
 
-  struct s1
-  {
-    union{
-      int i[2];
-      float f[2];
-      double d[1];
-    }u;
-  };
-
-  struct s1 data[DIM_LEN];//DIM_LEN = number of records
+  char data[DIM_LEN][INTEGER(size)[0]];
   for (int i=0; i<DIM_LEN; i++)
     {
+      int MyByteId=0;
       for(int dim=0; dim<myNdim ; dim++){
 	SEXP coldata = VECTOR_ELT(TheData,dim);// (data for dim-th column) 
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_DOUBLE"  ) == 0){
-	  data[i].u.d[dim]=REAL(VECTOR_ELT(coldata,i))[0];
+	  double tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[8];
+	  memcpy(buf, &tmp, sizeof(double));
+	  for(int myloop=0;myloop<8;myloop++){
+	    data[i][myloop+MyByteId] = buf[myloop];
+	  }
+	  MyByteId+=8;
 	}
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_INT"  ) == 0){
-	  data[i].u.i[dim] = INTEGER(VECTOR_ELT(coldata,i))[0];
+	  int tmp = INTEGER(VECTOR_ELT(coldata,i))[0];
+	  char buf[4];
+	  memcpy(buf, &tmp, sizeof(int));
+          for(int myloop=0;myloop<4;myloop++){
+	    data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=4;
 	}
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_FLOAT"  ) == 0){
-	  data[i].u.f[dim] = REAL(VECTOR_ELT(coldata,i))[0];
+	  float tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[4];
+          memcpy(buf, &tmp, sizeof(float));
+	  for(int myloop=0;myloop<4;myloop++){
+            data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=4;
 	}
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_SHORT"  ) == 0){
+	  short tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[2];
+	  memcpy(buf, &tmp, sizeof(short));
+	  for(int myloop=0;myloop<2;myloop++){
+            data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=2;
+        }
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_USHORT"  ) == 0){
+	  unsigned short tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[2];
+          memcpy(buf, &tmp, sizeof(unsigned short));
+          for(int myloop=0;myloop<2;myloop++){
+            data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=2;
+        }
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_UINT"  ) == 0){
+	  unsigned int tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[4];
+          memcpy(buf, &tmp, sizeof(unsigned int));
+          for(int myloop=0;myloop<2;myloop++){
+            data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=4;
+        }
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_INT64"  ) == 0){
+	  long tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[8];
+	  memcpy(buf, &tmp, sizeof(long));
+	  for(int myloop=0;myloop<8;myloop++){
+            data[i][myloop+MyByteId] = buf[myloop];
+          }
+	  MyByteId+=8;
+        }
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_UINT64"  ) == 0){
+	  unsigned long tmp = REAL(VECTOR_ELT(coldata,i))[0];
+	  char buf[8];
+          memcpy(buf, &tmp, sizeof(unsigned long));
+          for(int myloop=0;myloop<8;myloop++){
+            data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=8;
+        }
       }
     }
   nc_put_var(mycid, myvarid, data);

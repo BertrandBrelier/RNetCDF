@@ -201,17 +201,18 @@ compound.insert.nc <- function(ncfile, typeid, name, field_typeid)
     return(typeid)
 }
 
-compound.make.nc <- function(ncfile , nctypeid, varid, TheData)
+compound.fill.nc <- function(ncfile , nctypeid, varid, TheData)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
     stopifnot(class(nctypeid) == "NC_COMPOUND")
 
 
-    nc <- .Call("R_nc_make_compound",
+    nc <- .Call("R_nc_fill_compound",
                 as.integer(ncfile),
                 as.integer(nctypeid),
                 as.integer(varid),
+                as.integer(attr(nctypeid, "OffSet")),
                 as.integer(attr(nctypeid,'NVar')),
 		as.character(attr(nctypeid,'VarName')),
 		as.data.frame(TheData),	
