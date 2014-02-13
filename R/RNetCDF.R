@@ -48,6 +48,7 @@ create.nc <- function(filename,type)
     if(nc$status == 0) {
         ncfile <- nc$ncid
         attr(ncfile, "class") <- "NetCDF"
+        attr(ncfile, "NRecords") <- as.integer(10)
         return(ncfile)
     } else
         stop(nc$errmsg, call.=FALSE)
@@ -80,6 +81,8 @@ dim.def.nc <- function(ncfile, dimname, dimension)
 		as.character(dimname),
 		as.integer(dimension),
 		PACKAGE="RNetCDF")
+    attr(ncfile, "NRecords") <- dimension
+    return(ncfile)
 }
 
 compound.def.nc <- function(ncfile, size, name)
@@ -218,7 +221,8 @@ compound.fill.nc <- function(ncfile , nctypeid, varid, TheData)
                 as.integer(attr(nctypeid,'NVar')),
 		as.character(attr(nctypeid,'VarName')),
 		as.list(attr(nctypeid,'Dim')),
-		as.data.frame(TheData),	
+		as.data.frame(TheData),
+		as.integer(attr(ncfile,'NRecords')),	
                 PACKAGE="RNetCDF")
 }
 

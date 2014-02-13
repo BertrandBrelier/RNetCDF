@@ -43,7 +43,7 @@
 #include <R.h>
 #include <Rinternals.h>
 
-#define DIM_LEN 10 //number of records in file                                                                                                                                         
+//#define DIM_LEN 10 //number of records in file                                                                                                                                         
 #define SERVICE_RECORD "Data"
 
 
@@ -361,7 +361,7 @@ SEXP R_nc_read_DataFrame(SEXP nrow, SEXP col){
   return(retlist);
 }
 
-SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim, SEXP VarName, SEXP DimOfVariable, SEXP TheData){
+SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim, SEXP VarName, SEXP DimOfVariable, SEXP TheData, SEXP Nrecords){
 
   int status;
   SEXP retlist, retlistnames;
@@ -386,6 +386,8 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
   myvarid = INTEGER(varid)[0];
   myNdim = INTEGER(Ndim)[0];
 
+  //int DIM_LEN = 10;
+  int DIM_LEN = INTEGER(Nrecords)[0];
 
   char **data = (char **)malloc(sizeof(char*)*DIM_LEN);
   data[0] = (char **)malloc(sizeof(char)*DIM_LEN * INTEGER(size)[0] );
