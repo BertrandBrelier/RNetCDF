@@ -217,7 +217,7 @@ compound.fill.nc <- function(ncfile , nctypeid, varid, TheData)
                 as.integer(attr(nctypeid, "OffSet")),
                 as.integer(attr(nctypeid,'NVar')),
 		as.character(attr(nctypeid,'VarName')),
-		as.integer(attr(nctypeid,'Dim')),
+		as.list(attr(nctypeid,'Dim')),
 		as.data.frame(TheData),	
                 PACKAGE="RNetCDF")
 }
