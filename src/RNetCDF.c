@@ -387,7 +387,13 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
   myNdim = INTEGER(Ndim)[0];
 
 
-  char data[DIM_LEN][INTEGER(size)[0]];
+  char **data = (char **)malloc(sizeof(char*)*DIM_LEN);
+  data[0] = (char **)malloc(sizeof(char)*DIM_LEN * INTEGER(size)[0] );
+  for(int i=0;i<DIM_LEN;i++) {
+    data[i]=&data[0][i*INTEGER(size)[0]];
+  }
+  //char data[DIM_LEN][INTEGER(size)[0]];
+
   for (int i=0; i<DIM_LEN; i++)
     {
       int MyByteId=0;
@@ -486,8 +492,11 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
         }
       }
     }
-  nc_put_var(mycid, myvarid, data);
-
+  //nc_put_var(mycid, myvarid, data);
+  nc_put_var(mycid, myvarid,&data[0][0]);
+  
+  free(data[0]);
+  free(data);
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
   UNPROTECT(2);
