@@ -397,6 +397,9 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_CHAR"  ) == 0){
 	  const char *pathName = CHAR(STRING_ELT(VECTOR_ELT(coldata, i), 0));
 	  char buf[(1*TheDimOfVariable)];
+	  for(int myloop=0;myloop<(1*TheDimOfVariable);myloop++){
+	    buf[myloop] = "";
+	  }
 	  for(int myloop=0;(myloop<strlen(pathName) && myloop<TheDimOfVariable);myloop++){
 	    buf[myloop] = pathName[myloop];
 	  }
