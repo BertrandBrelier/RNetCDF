@@ -239,7 +239,7 @@ SEXP R_nc_inq_compound(SEXP ncid, SEXP typeid){
   return(retlist);
 }
 
-SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP field_typeid){
+SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP field_typeid, SEXP dim){
   int status;
 
   size_t myoffset;
@@ -258,6 +258,7 @@ SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP f
   setAttrib(retlist, R_NamesSymbol, retlistnames);
 
   myoffset = INTEGER(offset)[0];
+
   if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_INT"  ) == 0)
     mytype=NC_INT;
   else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_BYTE"  ) == 0)
@@ -291,7 +292,14 @@ SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP f
   else if (strcmp(CHAR(STRING_ELT(field_typeid, 0)), "NC_COMPOUND"  ) == 0)
     mytype= NC_COMPOUND ;
   
-  status = nc_insert_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype);
+  if(INTEGER(dim)[0]==1){
+    status = nc_insert_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype);
+  }
+  else{
+    int dim_sizes[1];
+    dim_sizes[0] = INTEGER(dim)[0];
+    status = nc_insert_array_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype , 1 , dim_sizes);
+  }
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
 
@@ -353,7 +361,7 @@ SEXP R_nc_read_DataFrame(SEXP nrow, SEXP col){
   return(retlist);
 }
 
-SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim, SEXP VarName, SEXP TheData){
+SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim, SEXP VarName, SEXP DimOfVariable, SEXP TheData){
 
   int status;
   SEXP retlist, retlistnames;
@@ -378,12 +386,26 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
   myvarid = INTEGER(varid)[0];
   myNdim = INTEGER(Ndim)[0];
 
+  int TheDimOfVariable = INTEGER(DimOfVariable)[0];
+
   char data[DIM_LEN][INTEGER(size)[0]];
   for (int i=0; i<DIM_LEN; i++)
     {
       int MyByteId=0;
       for(int dim=0; dim<myNdim ; dim++){
 	SEXP coldata = VECTOR_ELT(TheData,dim);// (data for dim-th column) 
+	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_CHAR"  ) == 0){
+	  const char *pathName = CHAR(STRING_ELT(VECTOR_ELT(coldata, i), 0));
+	  char buf[(1*TheDimOfVariable)];
+	  for(int myloop=0;(myloop<strlen(pathName) && myloop<TheDimOfVariable);myloop++){
+	    buf[myloop] = pathName[myloop];
+	  }
+          for(int myloop=0;myloop<(1*TheDimOfVariable);myloop++){
+	    data[i][myloop+MyByteId] = buf[myloop];
+          }
+          MyByteId+=(1*TheDimOfVariable);
+	}
+
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_DOUBLE"  ) == 0){
 	  double tmp = REAL(VECTOR_ELT(coldata,i))[0];
 	  char buf[8];
@@ -433,7 +455,7 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
 	  unsigned int tmp = REAL(VECTOR_ELT(coldata,i))[0];
 	  char buf[4];
           memcpy(buf, &tmp, sizeof(unsigned int));
-          for(int myloop=0;myloop<2;myloop++){
+          for(int myloop=0;myloop<4;myloop++){
             data[i][myloop+MyByteId] = buf[myloop];
           }
           MyByteId+=4;

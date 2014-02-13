@@ -137,7 +137,7 @@ var.def.nc <- function(ncfile,typeid,name,spin)
         stop(nc$errmsg, call.=FALSE)			
 }
 
-compound.insert.nc <- function(ncfile, typeid, name, field_typeid)
+compound.insert.nc <- function(ncfile, typeid, name, field_typeid, dim=1)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -149,52 +149,54 @@ compound.insert.nc <- function(ncfile, typeid, name, field_typeid)
           as.character(name),
           as.integer(attr(typeid, "OffSet")),
           as.character(field_typeid),
+	  as.integer(dim),
           PACKAGE="RNetCDF")
 
     attr(typeid, "NVar") <- as.integer(attr(typeid,'NVar')+1)
     attr(typeid, "VarName") <- append(attr(typeid, "VarName"),as.character(field_typeid))
+    attr(typeid, "Dim") <- append(attr(typeid, "Dim"),as.integer(dim))
   if(as.character(field_typeid)=="NC_INT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim)
     }
 
   if(as.character(field_typeid)=="NC_BYTE"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim)
     }
 
   if(as.character(field_typeid)=="NC_CHAR"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim)
     }
 
   if(as.character(field_typeid)=="NC_SHORT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2*dim)
     }
 
   if(as.character(field_typeid)=="NC_FLOAT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim)
     }
 
   if(as.character(field_typeid)=="NC_DOUBLE"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim)
     }
 
   if(as.character(field_typeid)=="NC_UBYTE"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim)
     }
 
   if(as.character(field_typeid)=="NC_USHORT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2*dim)
     }
 
   if(as.character(field_typeid)=="NC_UINT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim)
     }
 
   if(as.character(field_typeid)=="NC_INT64"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim)
     }
 
   if(as.character(field_typeid)=="NC_UINT64"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim)
     }
 
 
@@ -215,6 +217,7 @@ compound.fill.nc <- function(ncfile , nctypeid, varid, TheData)
                 as.integer(attr(nctypeid, "OffSet")),
                 as.integer(attr(nctypeid,'NVar')),
 		as.character(attr(nctypeid,'VarName')),
+		as.integer(attr(nctypeid,'Dim')),
 		as.data.frame(TheData),	
                 PACKAGE="RNetCDF")
 }
