@@ -430,68 +430,82 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
 	  }
 	}
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_INT"  ) == 0){
-	  int tmp = INTEGER(VECTOR_ELT(coldata,i))[0];
-	  char buf[(4*TheDimOfVariable)];
-	  memcpy(buf, &tmp, sizeof(int));
-          for(int myloop=0;myloop<(4*TheDimOfVariable);myloop++){
-	    data[i][myloop+MyByteId] = buf[myloop];
-          }
-          MyByteId+=(4*TheDimOfVariable);
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    int tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[4];
+	    memcpy(buf, &tmp, sizeof(int));
+	    for(int myloop=0;myloop<4;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
+	    }
+	    MyByteId+=4;
+	  }
 	}
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_FLOAT"  ) == 0){
-	  float tmp = REAL(VECTOR_ELT(coldata,i))[0];
-	  char buf[(4*TheDimOfVariable)];
-          memcpy(buf, &tmp, sizeof(float));
-	  for(int myloop=0;myloop<(4*TheDimOfVariable);myloop++){
-            data[i][myloop+MyByteId] = buf[myloop];
-          }
-          MyByteId+=(4*TheDimOfVariable);
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    float tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[4];
+	    memcpy(buf, &tmp, sizeof(float));
+	    for(int myloop=0;myloop<4;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
+	    }
+	    MyByteId+=4;
+	  }
 	}
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_SHORT"  ) == 0){
-	  short tmp = REAL(VECTOR_ELT(coldata,i))[0];
-	  char buf[(2*TheDimOfVariable)];
-	  memcpy(buf, &tmp, sizeof(short));
-	  for(int myloop=0;myloop<(2*TheDimOfVariable);myloop++){
-            data[i][myloop+MyByteId] = buf[myloop];
-          }
-          MyByteId+=(2*TheDimOfVariable);
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    short tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[2];
+	    memcpy(buf, &tmp, sizeof(short));
+	    for(int myloop=0;myloop<2;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
+	    }
+	    MyByteId+=2;
+	  }
         }
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_USHORT"  ) == 0){
-	  unsigned short tmp = REAL(VECTOR_ELT(coldata,i))[0];
-	  char buf[(2*TheDimOfVariable)];
-          memcpy(buf, &tmp, sizeof(unsigned short));
-          for(int myloop=0;myloop<(2*TheDimOfVariable);myloop++){
-            data[i][myloop+MyByteId] = buf[myloop];
-          }
-          MyByteId+=(2*TheDimOfVariable);
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    unsigned short tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[2];
+	    memcpy(buf, &tmp, sizeof(unsigned short));
+	    for(int myloop=0;myloop<(2*TheDimOfVariable);myloop++){
+	      data[i][myloop+MyByteId] = buf[y];
+	    }
+	    MyByteId+=2;
+	  }
         }
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_UINT"  ) == 0){
-	  unsigned int tmp = REAL(VECTOR_ELT(coldata,i))[0];
-	  char buf[(4*TheDimOfVariable)];
-          memcpy(buf, &tmp, sizeof(unsigned int));
-          for(int myloop=0;myloop<(4*TheDimOfVariable);myloop++){
-            data[i][myloop+MyByteId] = buf[myloop];
-          }
-          MyByteId+=(4*TheDimOfVariable);
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    unsigned int tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[4];
+	    memcpy(buf, &tmp, sizeof(unsigned int));
+	    for(int myloop=0;myloop<4;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
+	    }
+	    MyByteId+=4;
+	  }
         }
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_INT64"  ) == 0){
-	  long tmp = REAL(VECTOR_ELT(coldata,i))[0];
-	  char buf[(8*TheDimOfVariable)];
-	  memcpy(buf, &tmp, sizeof(long));
-	  for(int myloop=0;myloop<(8*TheDimOfVariable);myloop++){
-            data[i][myloop+MyByteId] = buf[myloop];
-          }
-	  MyByteId+=(8*TheDimOfVariable);
-        }
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    long tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[8];
+	    memcpy(buf, &tmp, sizeof(long));
+	    for(int myloop=0;myloop<8;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
+	    }
+	    MyByteId+=8;
+	  }
+	}
 	if (strcmp(CHAR(STRING_ELT(VarName, dim)), "NC_UINT64"  ) == 0){
-	  unsigned long tmp = REAL(VECTOR_ELT(coldata,i))[0];
-	  char buf[(8*TheDimOfVariable)];
-          memcpy(buf, &tmp, sizeof(unsigned long));
-          for(int myloop=0;myloop<(8*TheDimOfVariable);myloop++){
-            data[i][myloop+MyByteId] = buf[myloop];
-          }
-          MyByteId+=(8*TheDimOfVariable);
-        }
+	  for(int y=0;y<TheDimOfVariable;y++){
+	    unsigned long tmp = REAL(VECTOR_ELT(coldata,i))[y];
+	    char buf[8];
+	    memcpy(buf, &tmp, sizeof(unsigned long));
+	    for(int myloop=0;myloop<8;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
+	    }
+	    MyByteId+=8;
+	  }
+	}
       }
     }
   //nc_put_var(mycid, myvarid, data);
