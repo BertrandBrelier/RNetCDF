@@ -114,6 +114,47 @@ SEXP R_nc_create (SEXP filename, SEXP type)
   return(retlist);
 }
 
+SEXP R_nc_open(SEXP NAME, SEXP mode)
+{
+
+  int status;
+  int ncid;
+  SEXP retlist, retlistnames;
+
+  /*-- Create output object and initialize return values --------------------*/
+  PROTECT(retlist = allocVector(VECSXP, 3));
+  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
+  SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
+
+  PROTECT(retlistnames = allocVector(STRSXP, 3));
+  SET_STRING_ELT(retlistnames, 0, mkChar("status"));
+  SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
+  SET_STRING_ELT(retlistnames, 2, mkChar("ncid"));
+  setAttrib(retlist, R_NamesSymbol, retlistnames);
+
+  ncid   = -1;
+  status = -1;
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  SET_VECTOR_ELT (retlist, 1, mkString(""));
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
+
+
+  int  cmode;
+  if     (strcmp(CHAR(STRING_ELT(mode, 0)), "NC_NOWRITE"  ) == 0)
+    cmode = NC_NOWRITE;
+  else if (strcmp(CHAR(STRING_ELT(mode, 0)), "NC_WRITE"  ) == 0)
+    cmode = NC_WRITE;
+
+  status = nc_open(R_ExpandFileName(CHAR(STRING_ELT(NAME, 0))), cmode, &ncid);
+
+  REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
+  REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
+  UNPROTECT(2);
+  return(retlist);
+
+}
+
 SEXP R_nc_close (SEXP ncid)
 {
   int  status;
@@ -239,7 +280,7 @@ SEXP R_nc_inq_compound(SEXP ncid, SEXP typeid){
   return(retlist);
 }
 
-SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP field_typeid, SEXP dim){
+SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP field_typeid, SEXP dim , SEXP dim2){
   int status;
 
   size_t myoffset;
@@ -296,15 +337,221 @@ SEXP R_nc_insert_compound(SEXP ncid, SEXP typeid, SEXP name, SEXP offset, SEXP f
     status = nc_insert_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype);
   }
   else{
-    int dim_sizes[1];
-    dim_sizes[0] = INTEGER(dim)[0];
-    status = nc_insert_array_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype , 1 , dim_sizes);
+    if(INTEGER(dim2)[0]==1){
+      int dim_sizes[1];
+      dim_sizes[0] = INTEGER(dim)[0];
+      status = nc_insert_array_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype , 1 , dim_sizes);
+    }
+    else{
+      int dim_sizes[2];
+      dim_sizes[0] = INTEGER(dim)[0];
+      dim_sizes[1] = INTEGER(dim2)[0];
+      status = nc_insert_array_compound(INTEGER(ncid)[0], INTEGER(typeid)[0], CHAR(STRING_ELT(name, 0)) ,myoffset, mytype , 2 , dim_sizes);
+    }
   }
 
   REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
 
   UNPROTECT(2);
   return(retlist);
+}
+
+SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
+
+  int status;
+  int ncid;
+  //SEXP retlist, retlistnames;
+
+  /* /\*-- Create output object and initialize return values --------------------*\/ */
+  /* PROTECT(retlist = allocVector(VECSXP, 3)); */
+  /* SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1)); */
+  /* SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1)); */
+  /* SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP,  1)); */
+
+  /* PROTECT(retlistnames = allocVector(STRSXP, 3)); */
+  /* SET_STRING_ELT(retlistnames, 0, mkChar("status")); */
+  /* SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); */
+  /* SET_STRING_ELT(retlistnames, 2, mkChar("ncid")); */
+  /* setAttrib(retlist, R_NamesSymbol, retlistnames); */
+
+  /* status = -1; */
+  /* //ncid = -1; */
+  /* REAL(VECTOR_ELT(retlist, 0))[0] = (double)status; */
+  /* SET_VECTOR_ELT (retlist, 1, mkString("R_nc_get_var")); */
+  /* REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid; */
+
+
+  //Read dimension from file
+  int recid;
+  size_t latlength;
+  int var_id;
+
+  status = nc_open(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))), NC_NOWRITE, &ncid);
+  status = nc_inq_dimid(ncid, CHAR(STRING_ELT(dimname, 0)), &recid);/* get ID for lat dimension */
+  status = nc_inq_dimlen(ncid, recid, &latlength);//get length of dimension
+  nc_type xtype;
+  int ndims,natts;
+  char Name[NC_MAX_NAME + 1];
+  int varid;
+  status = nc_inq_varid(ncid,CHAR(STRING_ELT(name, 0)),&varid);
+  status = nc_inq_var(ncid, varid, Name, &xtype, &ndims, &recid, &natts);
+  int mylen;
+  mylen = latlength;
+
+  size_t size;
+  size_t nfields;
+  status = nc_inq_compound(ncid, xtype, CHAR(STRING_ELT(name, 0)), &size, &nfields);
+
+  char data_in2[mylen][size];
+  status = nc_get_var(ncid, recid, &data_in2);
+
+  //Dataframe
+  SEXP df;
+  SEXP data;
+
+  PROTECT(df = allocVector(VECSXP, 1));
+  SET_VECTOR_ELT(df, 0, data = allocVector(VECSXP, nfields));
+  SEXP dataName;
+  PROTECT(dataName = allocVector(STRSXP, nfields));
+
+  SEXP test;
+
+  for(int kapa=0;kapa<mylen;kapa++){//loop over number of records
+
+    int MyOffset=0;
+
+
+    for(int FieldLoop=0;FieldLoop<nfields;FieldLoop++){//loop over numver of fields
+      nc_type field_xtype;
+      status = nc_inq_compound_fieldtype(ncid, xtype, FieldLoop, &field_xtype);
+      int ndimsp;
+      status = nc_inq_compound_fieldndims(ncid, xtype, FieldLoop, &ndimsp);
+
+      //Retrieve variable names
+      char NameField[NC_MAX_NAME + 1];
+      status = nc_inq_compound_fieldname(ncid, xtype, FieldLoop, &NameField);
+      if(kapa==0){
+	SET_STRING_ELT(dataName, FieldLoop, mkChar(NameField));
+	setAttrib(data, R_NamesSymbol, dataName );
+	if(field_xtype==NC_INT || field_xtype==NC_SHORT || field_xtype==NC_USHORT || field_xtype==NC_UINT || field_xtype==NC_INT64 || field_xtype==NC_UINT64){
+	  SET_VECTOR_ELT(data, FieldLoop ,allocVector(INTSXP, mylen));
+	}
+	if(field_xtype==NC_FLOAT || field_xtype==NC_DOUBLE){
+	  SET_VECTOR_ELT(data, FieldLoop ,test=allocVector(REALSXP, mylen));
+	}
+	if(field_xtype==NC_CHAR){
+	  SET_VECTOR_ELT(data, FieldLoop ,allocVector(STRSXP, mylen));
+	}
+      }
+
+      if(field_xtype==NC_CHAR){
+	int Loop=1;
+        if(ndimsp>0){
+          int dim_sizes[] = {0};
+          status = nc_inq_compound_fielddim_sizes( ncid, xtype, FieldLoop, &dim_sizes);
+          for(int uytr=0;uytr<ndimsp;uytr++)
+            Loop=Loop*dim_sizes[uytr];
+        }
+	//printf("Loop = %i \n",Loop);
+	char buf2[Loop+1];
+	for(int qw=0;qw<Loop;qw++){
+	  buf2[qw]=data_in2[kapa][MyOffset];
+	  MyOffset+=1;
+	}
+	buf2[Loop]=0;
+	SET_STRING_ELT(VECTOR_ELT(data, FieldLoop), kapa, mkChar(buf2));
+      }
+      
+      if(field_xtype==NC_DOUBLE){
+        double tmp;
+        char buf[8];
+	for(int io=0;io<8;io++){
+	  buf[io]=data_in2[kapa][io+MyOffset];
+	}
+	memcpy(&tmp,buf, sizeof(double));
+        REAL(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+        MyOffset+=8;
+      }
+
+
+      if(field_xtype==NC_FLOAT){
+	float tmp;
+	char buf[4];
+	buf[0]=data_in2[kapa][0+MyOffset];
+	buf[1]=data_in2[kapa][1+MyOffset];
+	buf[2]=data_in2[kapa][2+MyOffset];
+	buf[3]=data_in2[kapa][3+MyOffset];
+	memcpy(&tmp,buf, sizeof(float));
+	REAL(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=4;
+      }
+      if(field_xtype==NC_SHORT){
+	short tmp;
+        char buf[2];
+        buf[0]=data_in2[kapa][0+MyOffset];
+        buf[1]=data_in2[kapa][1+MyOffset];
+        memcpy(&tmp,buf, sizeof(short));
+        INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=4;
+      }
+      if(field_xtype==NC_USHORT){
+	unsigned short tmp;
+        char buf[2];
+        buf[0]=data_in2[kapa][0+MyOffset];
+        buf[1]=data_in2[kapa][1+MyOffset];
+        memcpy(&tmp,buf, sizeof(unsigned short));
+        INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=4;
+      }
+      if(field_xtype==NC_INT){
+	int tmp;
+	char buf[4];
+	buf[0]=data_in2[kapa][0+MyOffset];
+	buf[1]=data_in2[kapa][1+MyOffset];
+	buf[2]=data_in2[kapa][2+MyOffset];
+	buf[3]=data_in2[kapa][3+MyOffset];
+	memcpy(&tmp,buf, sizeof(int)); 
+	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=4;
+      }//If INT
+      if(field_xtype==NC_UINT){
+	unsigned int tmp;
+	char buf[4];
+	buf[0]=data_in2[kapa][0+MyOffset];
+	buf[1]=data_in2[kapa][1+MyOffset];
+	buf[2]=data_in2[kapa][2+MyOffset];
+	buf[3]=data_in2[kapa][3+MyOffset];
+	memcpy(&tmp,buf, sizeof(unsigned int)); 
+	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=4;
+      }
+      if(field_xtype==NC_INT64){
+	long tmp;
+	char buf[8];
+        for(int io=0;io<8;io++){
+          buf[io]=data_in2[kapa][io+MyOffset];
+        }
+	memcpy(&tmp,buf, sizeof(long)); 
+	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=8;
+      }
+      if(field_xtype==NC_UINT64){
+	unsigned long tmp;
+	char buf[8];
+        for(int io=0;io<8;io++){
+          buf[io]=data_in2[kapa][io+MyOffset];
+        }
+	memcpy(&tmp,buf, sizeof(unsigned long)); 
+	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
+	MyOffset+=8;
+      }
+    }
+  }
+
+  status = nc_close(ncid);
+
+  UNPROTECT(2);
+  return(df);
 }
 
 SEXP R_nc_def_var(SEXP ncid, SEXP typeid, SEXP name, SEXP spin){
@@ -333,32 +580,6 @@ SEXP R_nc_def_var(SEXP ncid, SEXP typeid, SEXP name, SEXP spin){
   UNPROTECT(2);
   return(retlist);
 
-}
-
-SEXP R_nc_read_DataFrame(SEXP nrow, SEXP col){
-  SEXP retlist, retlistnames;
-  PROTECT(retlist = allocVector(VECSXP, 2));
-  SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-  SET_VECTOR_ELT(retlist, 1, allocVector(REALSXP, 1));
-
-
-  PROTECT(retlistnames = allocVector(STRSXP, 2));
-  SET_STRING_ELT(retlistnames, 0, mkChar("Nrow"));
-  SET_STRING_ELT(retlistnames, 1, mkChar("Col1"));
-  setAttrib(retlist, R_NamesSymbol, retlistnames);
-
-  int myrow = INTEGER(nrow)[0];
-  int sum = 0;
-  for (int i=0;i<myrow;i++){
-    sum+=INTEGER(col)[i];
-  }
-
-
-  REAL(VECTOR_ELT(retlist, 0))[0] = INTEGER(nrow)[0];
-  REAL(VECTOR_ELT(retlist, 1))[0] = sum;
-
-  UNPROTECT(2);
-  return(retlist);
 }
 
 SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim, SEXP VarName, SEXP DimOfVariable, SEXP TheData, SEXP Nrecords){
@@ -467,8 +688,8 @@ SEXP R_nc_fill_compound(SEXP ncid, SEXP typeid, SEXP varid,SEXP size, SEXP Ndim,
 	    unsigned short tmp = REAL(VECTOR_ELT(coldata,i))[y];
 	    char buf[2];
 	    memcpy(buf, &tmp, sizeof(unsigned short));
-	    for(int myloop=0;myloop<(2*TheDimOfVariable);myloop++){
-	      data[i][myloop+MyByteId] = buf[y];
+	    for(int myloop=0;myloop<2;myloop++){
+	      data[i][myloop+MyByteId] = buf[myloop];
 	    }
 	    MyByteId+=2;
 	  }

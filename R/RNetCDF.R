@@ -53,22 +53,30 @@ create.nc <- function(filename,type)
     } else
         stop(nc$errmsg, call.=FALSE)
 }
-
-DataFrame.read <- function(dataframe)
+open.nc <- function(filename,type)
 {
-    #-- Check args -------------------------------------------------------------#
-    stopifnot(class(dataframe) == "data.frame")
+    nc <- .Call("R_nc_open",
+                as.character(filename),
+                as.character(type),
+                PACKAGE="RNetCDF")
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        ncfile <- nc$ncid
+        attr(ncfile, "class") <- "NetCDF"
+        return(ncfile)
+    } else
+        stop(nc$errmsg, call.=FALSE)
+}
 
-    Nrow <- nrow(dataframe)
-    Column <- dataframe[[2]]
-    nc <- .Call("R_nc_read_DataFrame",
-                as.integer(Nrow),
-		as.integer(Data[[2]]),
-                PACKAGE="RNetCDF")	
 
-    #ncfile <- nc$Nrow
-    #ncfile <- nc$Col1
-    return(nc)
+get.compound.nc <- function(filename,NameOfDimension,NameOfVariable)
+{
+    df <- .Call("R_nc_get_var",
+                as.character(filename),
+                as.character(NameOfDimension),
+                as.character(NameOfVariable),
+                PACKAGE="RNetCDF")
+    return(as.data.frame(df))
 }
 
 dim.def.nc <- function(ncfile, dimname, dimension)
@@ -140,7 +148,7 @@ var.def.nc <- function(ncfile,typeid,name,spin)
         stop(nc$errmsg, call.=FALSE)			
 }
 
-compound.insert.nc <- function(ncfile, typeid, name, field_typeid, dim=1)
+compound.insert.nc <- function(ncfile, typeid, name, field_typeid, dim=1 , dim2=1)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -153,53 +161,54 @@ compound.insert.nc <- function(ncfile, typeid, name, field_typeid, dim=1)
           as.integer(attr(typeid, "OffSet")),
           as.character(field_typeid),
 	  as.integer(dim),
+	  as.integer(dim2),
           PACKAGE="RNetCDF")
 
     attr(typeid, "NVar") <- as.integer(attr(typeid,'NVar')+1)
     attr(typeid, "VarName") <- append(attr(typeid, "VarName"),as.character(field_typeid))
-    attr(typeid, "Dim") <- append(attr(typeid, "Dim"),as.integer(dim))
+    attr(typeid, "Dim") <- append(attr(typeid, "Dim"),as.integer(dim*dim2))
   if(as.character(field_typeid)=="NC_INT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_BYTE"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_CHAR"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_SHORT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_FLOAT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_DOUBLE"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_UBYTE"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+1*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_USHORT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+2*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_UINT"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+4*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_INT64"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim*dim2)
     }
 
   if(as.character(field_typeid)=="NC_UINT64"){
-       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim)
+       attr(typeid, "OffSet") <- as.integer(attr(typeid,'OffSet')+8*dim*dim2)
     }
 
 
