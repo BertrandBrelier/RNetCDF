@@ -360,26 +360,6 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
 
   int status;
   int ncid;
-  //SEXP retlist, retlistnames;
-
-  /* /\*-- Create output object and initialize return values --------------------*\/ */
-  /* PROTECT(retlist = allocVector(VECSXP, 3)); */
-  /* SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1)); */
-  /* SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1)); */
-  /* SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP,  1)); */
-
-  /* PROTECT(retlistnames = allocVector(STRSXP, 3)); */
-  /* SET_STRING_ELT(retlistnames, 0, mkChar("status")); */
-  /* SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); */
-  /* SET_STRING_ELT(retlistnames, 2, mkChar("ncid")); */
-  /* setAttrib(retlist, R_NamesSymbol, retlistnames); */
-
-  /* status = -1; */
-  /* //ncid = -1; */
-  /* REAL(VECTOR_ELT(retlist, 0))[0] = (double)status; */
-  /* SET_VECTOR_ELT (retlist, 1, mkString("R_nc_get_var")); */
-  /* REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid; */
-
 
   //Read dimension from file
   int recid;
@@ -402,8 +382,19 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
   size_t nfields;
   status = nc_inq_compound(ncid, xtype, CHAR(STRING_ELT(name, 0)), &size, &nfields);
 
-  char data_in2[mylen][size];
-  status = nc_get_var(ncid, recid, &data_in2);
+  /* char data_in[mylen][size]; */
+  /* status = nc_get_var(ncid, recid, &data_in); */
+
+
+  char **data_in = (char **)malloc(sizeof(char*)*mylen);
+  data_in[0] = (char **)malloc(sizeof(char)*mylen * size );
+  for(int i=0;i<mylen;i++) {
+    data_in[i]=&data_in[0][i*size];
+  }
+
+  status = nc_get_var(ncid, recid, &data_in[0][0]);
+
+
 
   //Dataframe
   SEXP df;
@@ -455,7 +446,7 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
 	//printf("Loop = %i \n",Loop);
 	char buf2[Loop+1];
 	for(int qw=0;qw<Loop;qw++){
-	  buf2[qw]=data_in2[kapa][MyOffset];
+	  buf2[qw]=data_in[kapa][MyOffset];
 	  MyOffset+=1;
 	}
 	buf2[Loop]=0;
@@ -466,7 +457,7 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
         double tmp;
         char buf[8];
 	for(int io=0;io<8;io++){
-	  buf[io]=data_in2[kapa][io+MyOffset];
+	  buf[io]=data_in[kapa][io+MyOffset];
 	}
 	memcpy(&tmp,buf, sizeof(double));
         REAL(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
@@ -477,10 +468,10 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
       if(field_xtype==NC_FLOAT){
 	float tmp;
 	char buf[4];
-	buf[0]=data_in2[kapa][0+MyOffset];
-	buf[1]=data_in2[kapa][1+MyOffset];
-	buf[2]=data_in2[kapa][2+MyOffset];
-	buf[3]=data_in2[kapa][3+MyOffset];
+	buf[0]=data_in[kapa][0+MyOffset];
+	buf[1]=data_in[kapa][1+MyOffset];
+	buf[2]=data_in[kapa][2+MyOffset];
+	buf[3]=data_in[kapa][3+MyOffset];
 	memcpy(&tmp,buf, sizeof(float));
 	REAL(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
 	MyOffset+=4;
@@ -488,8 +479,8 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
       if(field_xtype==NC_SHORT){
 	short tmp;
         char buf[2];
-        buf[0]=data_in2[kapa][0+MyOffset];
-        buf[1]=data_in2[kapa][1+MyOffset];
+        buf[0]=data_in[kapa][0+MyOffset];
+        buf[1]=data_in[kapa][1+MyOffset];
         memcpy(&tmp,buf, sizeof(short));
         INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
 	MyOffset+=4;
@@ -497,8 +488,8 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
       if(field_xtype==NC_USHORT){
 	unsigned short tmp;
         char buf[2];
-        buf[0]=data_in2[kapa][0+MyOffset];
-        buf[1]=data_in2[kapa][1+MyOffset];
+        buf[0]=data_in[kapa][0+MyOffset];
+        buf[1]=data_in[kapa][1+MyOffset];
         memcpy(&tmp,buf, sizeof(unsigned short));
         INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
 	MyOffset+=4;
@@ -506,10 +497,10 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
       if(field_xtype==NC_INT){
 	int tmp;
 	char buf[4];
-	buf[0]=data_in2[kapa][0+MyOffset];
-	buf[1]=data_in2[kapa][1+MyOffset];
-	buf[2]=data_in2[kapa][2+MyOffset];
-	buf[3]=data_in2[kapa][3+MyOffset];
+	buf[0]=data_in[kapa][0+MyOffset];
+	buf[1]=data_in[kapa][1+MyOffset];
+	buf[2]=data_in[kapa][2+MyOffset];
+	buf[3]=data_in[kapa][3+MyOffset];
 	memcpy(&tmp,buf, sizeof(int)); 
 	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
 	MyOffset+=4;
@@ -517,10 +508,10 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
       if(field_xtype==NC_UINT){
 	unsigned int tmp;
 	char buf[4];
-	buf[0]=data_in2[kapa][0+MyOffset];
-	buf[1]=data_in2[kapa][1+MyOffset];
-	buf[2]=data_in2[kapa][2+MyOffset];
-	buf[3]=data_in2[kapa][3+MyOffset];
+	buf[0]=data_in[kapa][0+MyOffset];
+	buf[1]=data_in[kapa][1+MyOffset];
+	buf[2]=data_in[kapa][2+MyOffset];
+	buf[3]=data_in[kapa][3+MyOffset];
 	memcpy(&tmp,buf, sizeof(unsigned int)); 
 	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
 	MyOffset+=4;
@@ -529,7 +520,7 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
 	long tmp;
 	char buf[8];
         for(int io=0;io<8;io++){
-          buf[io]=data_in2[kapa][io+MyOffset];
+          buf[io]=data_in[kapa][io+MyOffset];
         }
 	memcpy(&tmp,buf, sizeof(long)); 
 	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
@@ -539,7 +530,7 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
 	unsigned long tmp;
 	char buf[8];
         for(int io=0;io<8;io++){
-          buf[io]=data_in2[kapa][io+MyOffset];
+          buf[io]=data_in[kapa][io+MyOffset];
         }
 	memcpy(&tmp,buf, sizeof(unsigned long)); 
 	INTEGER(VECTOR_ELT(data, FieldLoop))[kapa] = tmp;
@@ -547,6 +538,9 @@ SEXP R_nc_get_var(SEXP filename, SEXP dimname, SEXP name){
       }
     }
   }
+
+  free(data_in[0]);
+  free(data_in);
 
   status = nc_close(ncid);
 
